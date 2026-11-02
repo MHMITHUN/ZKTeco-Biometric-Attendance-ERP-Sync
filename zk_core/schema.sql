@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Enterprise Biometric Attendance & HRMS MySQL Schema
--- Author: MD. Mahamudul Hasan (IT Officer)
+-- Author: MD. Mahamudul Hasan
 -- Repository: ZKTeco-Biometric-Attendance-ERP-Sync
 -- ============================================================================
 

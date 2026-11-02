@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ZKTeco Biometric Time-Attendance & MySQL HRMS Sync Daemon
-Author: MD. Mahamudul Hasan (IT Officer)
+Author: MD. Mahamudul Hasan
 Repository: ZKTeco-Biometric-Attendance-ERP-Sync
 License: MIT
 

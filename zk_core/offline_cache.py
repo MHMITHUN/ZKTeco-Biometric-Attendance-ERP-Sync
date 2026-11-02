@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ZKTeco Offline Punch Queue & Failover Cache (SQLite)
-Author: MD. Mahamudul Hasan (IT Officer)
+Author: MD. Mahamudul Hasan
 Repository: ZKTeco-Biometric-Attendance-ERP-Sync
 License: MIT
 
