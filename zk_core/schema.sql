@@ -78,5 +78,5 @@ INSERT INTO `employees` (`emp_code`, `full_name`, `department`, `designation`) V
 ('EMP-0881', 'Nazma Begum', 'Quality Assurance (QA-03)', 'QA Inspector'),
 ('EMP-0315', 'Tanvir Hossain', 'Merchandising & Planning', 'Merchandiser'),
 ('EMP-1190', 'Farhana Akter', 'Cutting Section', 'Pattern Master'),
-('EMP-1508', 'Md. Mahamudul Hasan', 'IT & Systems Operations', 'IT Officer')
+('EMP-1508', 'Md. Mahamudul Hasan', 'IT & Systems Operations', 'Systems Administrator')
 ON DUPLICATE KEY UPDATE `full_name`=`full_name`;
