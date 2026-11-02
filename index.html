@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZKTeco Biometric Time-Attendance & MySQL ERP Sync Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <span class="flex size-3 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            <i class="fa-solid fa-fingerprint text-emerald-400"></i>
+            ZKTeco Biometric Time-Attendance &amp; ERP Sync Engine
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">TCP Port 4370 · ADMS Push Protocol · Automated MySQL Shift Reconciliation</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 font-mono text-xs">
+        <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded">
+          <span class="text-slate-400">SYNC ENGINE:</span>
+          <span class="text-emerald-400 font-bold ml-1">PORT 4370 LIVE</span>
+        </div>
+        <div class="bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded">
+          <span class="text-slate-400">CURRENT TIME:</span>
+          <span id="liveClock" class="text-cyan-400 font-bold ml-1">00:00:00</span>
+        </div>
+        <a href="https://github.com/MHMITHUN/ZKTeco-Biometric-Attendance-ERP-Sync" target="_blank"
+           class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3 py-1.5 rounded transition flex items-center gap-1.5">
+          <i class="fa-brands fa-github"></i>
+          <span>GitHub Repo</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <!-- Grid: Left = Punch Simulator, Right = JSON Protocol Inspector -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Interactive Terminal Simulator (Left: 5 Cols) -->
+      <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="border-b border-slate-800 pb-3 mb-4">
+            <span class="text-[10px] font-mono text-emerald-400 font-bold tracking-wider uppercase">SIMULATOR · HARDWARE EMULATOR</span>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2 mt-0.5">
+              <i class="fa-solid fa-id-badge text-cyan-400"></i>
+              ZKTeco Face &amp; Fingerprint Terminal Punch
+            </h2>
+          </div>
+
+          <div class="space-y-4 font-mono text-xs">
+            <div>
+              <label class="block text-slate-300 mb-1">Select Employee Profile:</label>
+              <select id="empSelect" onchange="loadSelectedEmp()"
+                      class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-400">
+                <option value="EMP-1508|Md. Mahamudul Hasan|IT & Systems Operations">EMP-1508 — Md. Mahamudul Hasan (IT Officer)</option>
+                <option value="EMP-1042|Md. Rafiqul Islam|Sewing Production (Line 2)">EMP-1042 — Md. Rafiqul Islam (Sewing Line 2)</option>
+                <option value="EMP-0881|Nazma Begum|Quality Assurance (QA-03)">EMP-0881 — Nazma Begum (QA Inspector)</option>
+                <option value="EMP-0315|Tanvir Hossain|Merchandising & Planning">EMP-0315 — Tanvir Hossain (Merchandiser)</option>
+                <option value="EMP-1190|Farhana Akter|Cutting & Pattern Section">EMP-1190 — Farhana Akter (Cutting Master)</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-400 text-[11px] mb-1">Employee ID:</label>
+                <input type="text" id="empIdInput" value="EMP-1508" readonly
+                       class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-cyan-300">
+              </div>
+              <div>
+                <label class="block text-slate-400 text-[11px] mb-1">Target Terminal:</label>
+                <select id="termSelect" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+                  <option value="ZK-FACE-01|ZKTeco ProFace X (Main Turnstiles)|192.168.30.12">ProFace X (Main Gate)</option>
+                  <option value="ZK-FINGER-02|ZKTeco SilkBio (Factory Gate 02)|192.168.30.13">SilkBio (Gate 02)</option>
+                  <option value="ZK-SPEED-03|ZKTeco SpeedFace (Admin HQ)|192.168.30.14">SpeedFace (Admin)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 text-[11px] mb-1">Biometric Verification Mode:</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="setMode('Face Recognition')" id="mode-face"
+                        class="mode-btn bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 py-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-camera"></i>
+                  <span>Face Recognition</span>
+                </button>
+                <button type="button" onclick="setMode('Optical Fingerprint')" id="mode-finger"
+                        class="mode-btn bg-slate-800 border border-slate-700 text-slate-400 py-2 rounded text-xs transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-fingerprint"></i>
+                  <span>Optical Fingerprint</span>
+                </button>
+              </div>
+            </div>
+
+            <button onclick="triggerSimulatedPunch()" id="punchBtn"
+                    class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2 mt-4 text-sm font-sans">
+              <i class="fa-solid fa-id-card-clip"></i>
+              <span>Simulate Biometric Turnstile Punch</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-400">
+          <span class="text-emerald-400 font-bold">Network Architecture:</span> ZKTeco hardware connects on VLAN 30 (192.168.30.0/24), communicating with the central payroll database over TLS-encrypted ADMS push protocol.
+        </div>
+      </div>
+
+      <!-- JSON Packet & Database Transaction Stream (Right: 7 Cols) -->
+      <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+            <div>
+              <span class="text-[10px] font-mono text-cyan-400 font-bold tracking-wider uppercase">TCP/IP ADMS STREAM</span>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-network-wired text-cyan-400"></i>
+                Real-Time MySQL Ingestion Payload
+              </h3>
+            </div>
+            <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">
+              ACID Transaction Validated
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-400 mb-3 font-mono">
+            Structured JSON payload extracted directly from ZKTeco memory buffer and pushed to MySQL `attendance_punches` table:
+          </p>
+
+          <pre id="jsonPayload" class="bg-black/90 border border-slate-800 rounded-xl p-4 font-mono text-xs text-emerald-400 overflow-x-auto leading-relaxed shadow-inner">
+{
+  "event": "ZKTECO_ATTENDANCE_PUNCH",
+  "punch_id": "PUNCH-9821",
+  "employee_id": "EMP-1042",
+  "employee_name": "Md. Rafiqul Islam",
+  "department": "Sewing Production (Line 2)",
+  "device_id": "ZK-FACE-01",
+  "device_ip": "192.168.30.12",
+  "verify_mode": "Face Recognition",
+  "match_score": "98.8%",
+  "timestamp": "2026-11-03 07:58:14",
+  "shift_status": "ON_TIME (WITHIN_GRACE)",
+  "sync_state": "COMMITTED_TO_MYSQL_HRMS"
+}
+          </pre>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-3 font-mono text-center text-xs">
+          <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">SOCKET PORT</span>
+            <span class="text-cyan-400 font-bold">TCP 4370</span>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">FAILOVER CACHE</span>
+            <span class="text-emerald-400 font-bold">SQLite Offline Buffer</span>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">RECONCILIATION</span>
+            <span class="text-amber-400 font-bold">Auto Shift Logic</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: LIVE ATTENDANCE LOG STREAM -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+        <div>
+          <span class="text-xs font-mono text-cyan-400 font-bold tracking-wider uppercase">MODULE 02 · RECONCILED LEDGER</span>
+          <h2 class="text-xl font-bold text-white">Live Attendance Punch Log &amp; Shift Reconciliation</h2>
+        </div>
+        <span class="font-mono text-xs text-slate-400">Total Factory Logs Today: <strong id="logCount" class="text-emerald-400">5 Records</strong></span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left font-mono text-xs">
+          <thead>
+            <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/60">
+              <th class="py-3 px-3">PUNCH ID</th>
+              <th class="py-3 px-3">EMPLOYEE</th>
+              <th class="py-3 px-3">DEPARTMENT</th>
+              <th class="py-3 px-3">TERMINAL IP</th>
+              <th class="py-3 px-3">VERIFY MODE</th>
+              <th class="py-3 px-3">TIMESTAMP</th>
+              <th class="py-3 px-3">SHIFT STATUS</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceTableBody" class="divide-y divide-slate-800">
+            <tr>
+              <td class="py-2.5 px-3 text-cyan-400 font-bold">PUNCH-9821</td>
+              <td class="py-2.5 px-3 font-bold text-white">Md. Rafiqul Islam (EMP-1042)</td>
+              <td class="py-2.5 px-3 text-slate-400">Sewing Production (Line 2)</td>
+              <td class="py-2.5 px-3 text-slate-400">192.168.30.12</td>
+              <td class="py-2.5 px-3 text-emerald-400"><i class="fa-solid fa-camera mr-1"></i>Face (98.4%)</td>
+              <td class="py-2.5 px-3 text-slate-300">07:58:14 AM</td>
+              <td class="py-2.5 px-3"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">ON_TIME</span></td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3 text-cyan-400 font-bold">PUNCH-9820</td>
+              <td class="py-2.5 px-3 font-bold text-white">Nazma Begum (EMP-0881)</td>
+              <td class="py-2.5 px-3 text-slate-400">Quality Assurance (QA-03)</td>
+              <td class="py-2.5 px-3 text-slate-400">192.168.30.12</td>
+              <td class="py-2.5 px-3 text-emerald-400"><i class="fa-solid fa-fingerprint mr-1"></i>Fingerprint (99.1%)</td>
+              <td class="py-2.5 px-3 text-slate-300">07:58:39 AM</td>
+              <td class="py-2.5 px-3"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">ON_TIME</span></td>
+            </tr>
+            <tr>
+              <td class="py-2.5 px-3 text-cyan-400 font-bold">PUNCH-9819</td>
+              <td class="py-2.5 px-3 font-bold text-white">Tanvir Hossain (EMP-0315)</td>
+              <td class="py-2.5 px-3 text-slate-400">Merchandising & Planning</td>
+              <td class="py-2.5 px-3 text-slate-400">192.168.30.14</td>
+              <td class="py-2.5 px-3 text-emerald-400"><i class="fa-solid fa-camera mr-1"></i>Face (97.8%)</td>
+              <td class="py-2.5 px-3 text-slate-300">07:59:02 AM</td>
+              <td class="py-2.5 px-3"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">ON_TIME</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 font-mono">
+    Developed by <span class="text-slate-300 font-bold">MD. Mahamudul Hasan</span> · IT Officer &amp; Surveillance Systems Specialist · MIT License
+  </footer>
+
+  <script>
+    let activeMode = 'Face Recognition';
+
+    setInterval(() => {
+      document.getElementById('liveClock').innerText = new Date().toLocaleTimeString();
+    }, 1000);
+
+    function loadSelectedEmp() {
+      const parts = document.getElementById('empSelect').value.split('|');
+      document.getElementById('empIdInput').value = parts[0];
+    }
+
+    function setMode(mode) {
+      activeMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => {
+        b.className = 'mode-btn bg-slate-800 border border-slate-700 text-slate-400 py-2 rounded text-xs transition flex items-center justify-center gap-1.5';
+      });
+      if (mode === 'Face Recognition') {
+        document.getElementById('mode-face').className = 'mode-btn bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 py-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5';
+      } else {
+        document.getElementById('mode-finger').className = 'mode-btn bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 py-2 rounded text-xs font-bold transition flex items-center justify-center gap-1.5';
+      }
+    }
+
+    function triggerSimulatedPunch() {
+      const btn = document.getElementById('punchBtn');
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Polling ZKTeco Socket...</span>';
+
+      setTimeout(() => {
+        const empParts = document.getElementById('empSelect').value.split('|');
+        const termParts = document.getElementById('termSelect').value.split('|');
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+        const punchId = 'PUNCH-' + Math.floor(1000 + Math.random() * 9000);
+        const score = (97.5 + Math.random() * 2.3).toFixed(1) + '%';
+
+        const payload = {
+          event: "ZKTECO_ATTENDANCE_PUNCH",
+          punch_id: punchId,
+          employee_id: empParts[0],
+          employee_name: empParts[1],
+          department: empParts[2],
+          device_id: termParts[0],
+          device_name: termParts[1],
+          device_ip: termParts[2],
+          verify_mode: activeMode,
+          match_score: score,
+          timestamp: now.toISOString().replace('T', ' ').substring(0, 19),
+          shift_status: "ON_TIME (SYNC_SUCCESS)",
+          sync_state: "COMMITTED_TO_MYSQL_HRMS"
+        };
+
+        document.getElementById('jsonPayload').innerText = JSON.stringify(payload, null, 2);
+
+        // Add to Table
+        const tbody = document.getElementById('attendanceTableBody');
+        const icon = activeMode === 'Face Recognition' ? 'fa-camera' : 'fa-fingerprint';
+        const newRow = `
+          <tr class="bg-emerald-950/20">
+            <td class="py-2.5 px-3 text-cyan-400 font-bold">${punchId}</td>
+            <td class="py-2.5 px-3 font-bold text-white">${empParts[1]} (${empParts[0]})</td>
+            <td class="py-2.5 px-3 text-slate-400">${empParts[2]}</td>
+            <td class="py-2.5 px-3 text-slate-400">${termParts[2]}</td>
+            <td class="py-2.5 px-3 text-emerald-400"><i class="fa-solid ${icon} mr-1"></i>${activeMode.split(' ')[0]} (${score})</td>
+            <td class="py-2.5 px-3 text-slate-300">${timeStr}</td>
+            <td class="py-2.5 px-3"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">SYNCED_LIVE</span></td>
+          </tr>
+        `;
+        tbody.innerHTML = newRow + tbody.innerHTML;
+
+        btn.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i><span>Punch Synced to MySQL!</span>';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fa-solid fa-id-card-clip"></i><span>Simulate Biometric Turnstile Punch</span>';
+        }, 1500);
+      }, 600);
+    }
+  </script>
+</body>
+</html>
